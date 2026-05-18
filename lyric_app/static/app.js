@@ -399,7 +399,7 @@
     content.style.display = 'none';
 
     let html = '';
-    for (const poem of results.slice(0, 5)) {
+    for (const poem of results.slice(0, 15)) {
       const pTitle = poem.title || '无题';
       const author = poem.author || '佚名';
       const lines = (poem.lines || []).slice(0, 4).join('\n');

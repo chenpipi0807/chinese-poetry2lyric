@@ -121,14 +121,14 @@ def _poem_to_dict(poem, matched_keyword=None):
         "author": poem.get("author") or "佚名",
         "title": poem.get("title") or poem.get("rhythmic") or "",
         "source": poem.get("_source") or "",
-        "lines": _get_lines(poem)[:8],
+        "lines": _get_lines(poem)[:12],
     }
     if matched_keyword:
         d["matched_keyword"] = matched_keyword
     return d
 
 
-def search_poems(keyword, max_results=8):
+def search_poems(keyword, max_results=20):
     """Search poems where keyword appears in title, rhythmic, author, or content lines."""
     if not keyword or not keyword.strip():
         return []

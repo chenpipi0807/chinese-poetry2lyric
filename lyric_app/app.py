@@ -169,7 +169,7 @@ def rag_search():
     keyword = (request.json or {}).get("keyword", "").strip()
     if not keyword:
         return jsonify({"results": [], "keyword": keyword, "count": 0})
-    results = search_poems(keyword, max_results=8)
+    results = search_poems(keyword, max_results=20)
     return jsonify({"results": results, "keyword": keyword, "count": len(results)})
 
 
@@ -212,13 +212,13 @@ def rag_agent_search():
 
     all_results = []
     for kw in related_keywords:
-        for r in search_poems(kw, max_results=4):
+        for r in search_poems(kw, max_results=8):
             r["matched_keyword"] = kw
             all_results.append(r)
-        if len(all_results) >= 8:
+        if len(all_results) >= 20:
             break
 
-    return jsonify({"results": all_results[:8], "keywords": related_keywords})
+    return jsonify({"results": all_results[:20], "keywords": related_keywords})
 
 
 @app.route("/api/tasks", methods=["GET"])
@@ -370,7 +370,7 @@ def _build_system_prompt(context, rag_results, target_fields):
     rag_section = ""
     if rag_results:
         rag_section = "\n【参考古典诗词素材（请从中汲取意境与意象，化用而非直译）】\n"
-        for i, r in enumerate(rag_results[:5], 1):
+        for i, r in enumerate(rag_results[:15], 1):
             poem_title = r.get("title") or "无题"
             author = r.get("author") or "佚名"
             lines = r.get("lines") or []
