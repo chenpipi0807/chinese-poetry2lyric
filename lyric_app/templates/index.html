@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歌词创作助手</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ Toolbar ═══════════════════════════════════════════════ -->
+  <header class="toolbar">
+    <span class="toolbar-logo">歌词创作助手</span>
+    <div class="toolbar-sep"></div>
+
+    <button class="btn btn-sm" id="btn-history" title="历史任务">📋 历史</button>
+    <div class="toolbar-sep"></div>
+
+    <button class="btn btn-sm" id="btn-new-task" title="新建任务（清空对话和编辑器）">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+      新建任务
+    </button>
+
+    <span id="task-badge" style="font-size:11px;color:var(--text-muted)">任务 —</span>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Action buttons -->
+    <button class="btn btn-sm" id="btn-action-polish" title="润色当前歌词">✨ 润色</button>
+    <button class="btn btn-sm" id="btn-action-rewrite" title="重写当前歌词">🔄 重写</button>
+    <button class="btn btn-sm" id="btn-action-continue" title="续写歌词">💡 续写</button>
+
+    <div class="toolbar-right">
+      <button class="btn btn-sm" id="btn-settings-toggle" title="API 设置">⚙ 设置</button>
+    </div>
+  </header>
+
+  <!-- ═══ Main Layout ════════════════════════════════════════════ -->
+  <div class="main-layout">
+
+    <!-- ── Editor Panel ───────────────────────────────────────── -->
+    <div class="editor-panel">
+
+      <!-- 标题 -->
+      <div class="editor-section section-title" data-field="title">
+        <div class="section-header">
+          <span class="section-label">标题</span>
+          <span class="section-badge" id="badge-title" style="display:none">0 处变更</span>
+          <div class="section-diff-actions" id="diff-actions-title" style="display:none">
+            <button class="btn btn-sm btn-success" data-field="title" data-action="accept-all">全接受</button>
+            <button class="btn btn-sm btn-danger"  data-field="title" data-action="reject-all">全拒绝</button>
+          </div>
+        </div>
+        <textarea class="field-textarea" id="textarea-title" placeholder="歌曲标题..."></textarea>
+        <div class="diff-view" id="diff-title" style="display:none"></div>
+      </div>
+
+      <!-- 风格描述 -->
+      <div class="editor-section section-style" data-field="style">
+        <div class="section-header">
+          <span class="section-label">风格描述</span>
+          <span class="section-badge" id="badge-style" style="display:none">0 处变更</span>
+          <div class="section-diff-actions" id="diff-actions-style" style="display:none">
+            <button class="btn btn-sm btn-success" data-field="style" data-action="accept-all">全接受</button>
+            <button class="btn btn-sm btn-danger"  data-field="style" data-action="reject-all">全拒绝</button>
+          </div>
+        </div>
+        <textarea class="field-textarea" id="textarea-style" placeholder="风格描述（情感基调、节奏特点、乐器搭配...）"></textarea>
+        <div class="diff-view" id="diff-style" style="display:none"></div>
+      </div>
+
+      <!-- 歌词 -->
+      <div class="editor-section section-lyrics" data-field="lyrics">
+        <div class="section-header">
+          <span class="section-label">歌词</span>
+          <span class="section-badge" id="badge-lyrics" style="display:none">0 处变更</span>
+          <div class="section-diff-actions" id="diff-actions-lyrics" style="display:none">
+            <button class="btn btn-sm btn-success" data-field="lyrics" data-action="accept-all">全接受</button>
+            <button class="btn btn-sm btn-danger"  data-field="lyrics" data-action="reject-all">全拒绝</button>
+          </div>
+        </div>
+        <textarea class="field-textarea" id="textarea-lyrics" placeholder="歌词将显示在这里...&#10;&#10;也可以直接在这里编辑歌词，然后在右侧聊天框输入润色要求。"></textarea>
+        <div class="diff-view" id="diff-lyrics" style="display:none"></div>
+      </div>
+
+    </div><!-- /editor-panel -->
+
+    <!-- ── Chat Panel ─────────────────────────────────────────── -->
+    <div class="chat-panel">
+
+      <!-- API Config (collapsible) -->
+      <div class="api-config" id="api-config">
+        <div class="config-header" id="config-header">
+          <span class="config-toggle" id="config-toggle">▶</span>
+          <span class="config-title">API 配置</span>
+          <span id="api-status-chip" style="font-size:11px;margin-left:auto"></span>
+        </div>
+        <div class="config-body" id="config-body" style="display:none">
+          <div class="form-group">
+            <label for="api-key">DeepSeek API Key</label>
+            <div class="input-with-btn">
+              <input type="password" id="api-key" placeholder="sk-..." class="form-input">
+              <button class="btn btn-sm" id="btn-toggle-key">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <p class="form-hint">在 <a href="https://platform.deepseek.com/" target="_blank">DeepSeek 开放平台</a> 获取</p>
+          </div>
+          <div class="form-group">
+            <label for="model-select">模型</label>
+            <select id="model-select" class="form-input">
+              <option value="deepseek-v4-flash">deepseek-v4-flash（推荐，更快）</option>
+              <option value="deepseek-v4-pro">deepseek-v4-pro（更强）</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="btn-save-settings">保存</button>
+            <button class="btn" id="btn-test-key">测试连接</button>
+          </div>
+          <div class="form-status" id="settings-status"></div>
+        </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chat-messages">
+        <div class="message ai">
+          <div class="message-avatar">AI</div>
+          <div class="message-content">
+            <p><strong>欢迎使用歌词创作助手</strong></p>
+            <p>在下方输入框中：</p>
+            <p>• 输入单个关键词（如 <strong>青青</strong>、<strong>离别</strong>）→ 自动检索相关古典诗词作为参考，再以此为主题创作</p>
+            <p>• 输入创作要求（如 <strong>写一首思乡的古风歌曲</strong>）→ 直接创作</p>
+            <p>• 继续对话来润色和调整，同一任务下历史会保留</p>
+            <p>• 点击 <strong>新建任务</strong> 开始全新的创作</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Panel (hidden by default) -->
+      <div class="template-panel" id="template-panel" style="display:none">
+        <div class="template-tabs" id="template-tabs">
+          <button class="tmpl-tab active" data-cat="poetry">古诗词</button>
+          <button class="tmpl-tab" data-cat="prose">散文</button>
+          <button class="tmpl-tab" data-cat="novel">小说</button>
+        </div>
+        <div class="template-list" id="template-list"></div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="chat-input-area">
+        <div class="rag-bar">
+          <label class="rag-toggle" id="rag-toggle-label">
+            <input type="checkbox" id="rag-toggle" checked>
+            <span>RAG 参考</span>
+          </label>
+          <span class="rag-hint" id="rag-hint">开启后自动检索本地诗词库作为创作参考</span>
+        </div>
+        <div class="target-fields">
+          <label class="field-checkbox"><input type="checkbox" id="chk-all" checked> 全部</label>
+          <label class="field-checkbox"><input type="checkbox" id="chk-title"> 标题</label>
+          <label class="field-checkbox"><input type="checkbox" id="chk-style"> 风格</label>
+          <label class="field-checkbox"><input type="checkbox" id="chk-lyrics"> 歌词</label>
+        </div>
+        <div class="chat-textarea-resize" id="resize-handle"></div>
+        <textarea
+          class="chat-input"
+          id="chat-input"
+          placeholder="输入关键词或创作需求...（Enter 发送，Shift+Enter 换行）"
+          rows="3"
+        ></textarea>
+        <div class="chat-input-footer">
+          <div class="chat-input-footer-left">
+            <button class="btn btn-sm" id="btn-template" title="快捷模板">模板</button>
+          </div>
+          <button class="btn btn-primary" id="btn-send">发送</button>
+        </div>
+      </div>
+
+    </div><!-- /chat-panel -->
+
+  </div><!-- /main-layout -->
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loading-overlay" style="display:none">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">AI 思考中...</div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- History drawer -->
+<div class="history-overlay" id="history-overlay"></div>
+<div class="history-panel" id="history-panel">
+  <div class="history-panel-header">
+    <span>历史任务</span>
+    <button class="btn btn-sm" id="btn-close-history">✕</button>
+  </div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

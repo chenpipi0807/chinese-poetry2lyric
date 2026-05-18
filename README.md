@@ -1,133 +1,119 @@
-<p align="center">
-  <a href="https://github.com/chinese-poetry/chinese-poetry">
-      <img src="https://avatars3.githubusercontent.com/u/30764933?s=200&v=4" alt="chinese-poetry">
-  </a>
-</p>
+# 歌词创作助手 · Chinese Poetry to Lyric
 
-<h2 align="center">chinese-poetry: 最全中文诗歌古典文集数据库</h2>
+基于 **390,904 首** 中华古典诗词数据库构建的 AI 歌词创作工具。通过 RAG（检索增强生成）将本地诗词库与 DeepSeek 大模型结合，帮助创作者用古典意境写现代歌词。
 
-<p align="center">
-  <a href="https://travis-ci.com/chinese-poetry/chinese-poetry" rel="nofollow">
-    <img height="28px" alt="Build Status" src="https://img.shields.io/travis/chinese-poetry/chinese-poetry?style=for-the-badge" style="max-width:100%;">
-  </a>
-  <a href="https://github.com/chinese-poetry/chinese-poetry/blob/master/LICENSE">
-    <img height="28px" alt="License" src="http://img.shields.io/badge/license-mit-blue.svg?style=for-the-badge" style="max-width:100%;">
-  </a>
-  <a href="https://github.com/chinese-poetry/chinese-poetry/graphs/contributors">
-    <img height="28px" alt="Contributors" src="https://img.shields.io/github/contributors/chinese-poetry/chinese-poetry.svg?style=for-the-badge" style="max-width:100%;">
-  </a>
-  <a href="https://www.patreon.com/jackeygao" rel="nofollow">
-    <img height="28px" alt="Patreon" src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Djackeygao%26type%3Dpledges&style=for-the-badge" style="max-width:100%;">
-  </a>
-</p>
+---
 
+## 核心功能
 
-最全的中华古典文集数据库，包含 5.5 万首唐诗、26 万首宋诗、2.1 万首宋词和其他古典文集。诗人包括唐宋两朝近 1.4 万古诗人，和两宋时期 1.5 千古词人。数据来源于互联网。
+### 🎵 歌词创作助手（`lyric_app/`）
+- **三栏编辑器**：标题 / 风格描述 / 歌词独立编辑，AI 逐字段更新
+- **Diff 审阅**：AI 每次修改以代码审阅视图呈现（绿=新增 / 红=删除），可逐段接受或拒绝
+- **RAG 检索**：输入关键词自动检索本地诗词库，以古典原文作为创作素材
+- **Agent 扩展搜索**：直接匹配为空时，由 AI 生成相关词再二次检索
+- **持久化任务**：所有任务和对话历史保存到本地磁盘，重启后完整恢复
+- **历史抽屉**：左侧滑入面板，随时切换任意历史任务
+- **快捷模板**：6 种预设创作框架（国风说唱 / 古韵戏腔 / 诗词故事融合 / 散文情歌 / 氛围民谣 / 小说主题曲 / 角色视角）
+- **连续对话**：同一任务下历史保留，新建任务清空重来
 
-**为什么要做这个仓库?** 古诗是中华民族乃至全世界的瑰宝，我们应该传承下去，虽然有古典文集，但大多数人并没有拥有这些书籍。从某种意义上来说，这些庞大的文集离我们是有一定距离的。而电子版方便拷贝，所以此开源数据库诞生了。此数据库通过 JSON 格式分发，可以让你很方便的开始你的项目。
+### 🔍 关键词检索脚本（`search.py`）
+全库搜索含指定关键词的诗词，结果保存到 `output/<关键词>.txt`：
+```bash
+python search.py 青青
+```
 
-古诗采集没有记录过程，因为古诗数据庞大，目标网站有限制，采集过程经常中断超过了一个星期。2017 年新加入全宋词，[全宋词爬取过程及数据分析](https://jackeygao.github.io/r/words/crawl-ci.html)。
+---
 
-## 高频词分析图
+## 快速开始
 
-<details open>
-  <summary><b>宋词受欢迎的词牌名</b></summary>
+### 环境要求
+- Python 3.9+
+- [DeepSeek API Key](https://platform.deepseek.com/)
 
-<div align="center">
-<img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/ci_rhythmic_topK.png" alt="两宋喜欢的词牌名">
-</div>
-</details>
+### 安装
+```bash
+cd lyric_app
+pip install -r requirements.txt
+```
 
-<details>
-  <summary><b>宋词高频词</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/ci_words_topK.png" alt="宋词高频词" style="max-width:100%;">
-</details>
+### 启动
+```bash
+# Windows 双击
+start.bat
 
-<details>
-  <summary><b>宋词作者作品榜</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/ci_author_topK.png" alt="宋词作者作品榜" style="max-width:100%;">
-</details>
+# 或命令行
+python lyric_app/app.py
+```
 
-<details>
-  <summary><b>唐诗高频词</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/tang_text_topK.png" alt="唐诗高频词" style="max-width:100%;">
-</details>
+浏览器打开 **http://localhost:4321**
 
-<details>
-  <summary><b>唐诗作者作品榜</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/tang_author_topK.png" alt="唐诗作者作品榜" style="max-width:100%;">
-</details>
+### 首次配置
+点击右上角 **⚙ 设置** → 填入 DeepSeek API Key → 保存
 
-<details>
-  <summary><b>宋诗高频词</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/song_text_topK.png" alt="宋诗高频词" style="max-width:100%;">
-</details>
+---
 
-<details>
-  <summary><b>宋诗作者作品榜</b></summary>
-  <img src="https://raw.githubusercontent.com/jackeygao/chinese-poetry/master/images/song_author_topK.png" alt="宋诗作者作品榜" style="max-width:100%;">
-</details>
+## 使用方式
 
-## 数据集
+| 输入 | 效果 |
+|------|------|
+| `青青` / `离别` 等关键词 | 自动 RAG 检索古诗 → 以检索结果为素材创作 |
+| 选择模板 → 填入主题词 | 按模板风格创作，同样触发 RAG |
+| `写一首思乡的古风歌曲` | 直接描述需求创作，跳过 RAG |
+| 选中"歌词"字段 → 输入润色要求 | 仅修改歌词，其他字段不动 |
+| 工具栏 ✨润色 / 🔄重写 / 💡续写 | 快捷操作当前歌词 |
 
-- [唐诗宋诗](./全唐诗)
-- [全宋词](./宋词)
-- [五代·花间集](./五代诗词/huajianji)
-- [五代·南唐二主词](./五代诗词/nantang)
-- [论语](./论语)
-- [诗经](./诗经)
-- [幽梦影](./幽梦影)
-- [四书五经](./四书五经)
-- [蒙学](./蒙学)
-- [纳兰性德诗集](./纳兰性德)
-- [御定全唐詩](./御定全唐詩)
+---
 
+## 项目结构
 
-## 贡献
+```
+chinese-poetry2lyric/
+├── lyric_app/              # 歌词创作 Web 应用
+│   ├── app.py              # Flask 后端（API + SSE 流式输出）
+│   ├── rag.py              # 本地诗词检索模块
+│   ├── tasks/              # 持久化任务存储（JSON）
+│   ├── templates/
+│   │   └── index.html      # 前端页面
+│   └── static/
+│       ├── app.js          # 前端主逻辑（Diff 引擎 / 历史抽屉 / RAG）
+│       └── styles.css      # VS Code Dark 风格样式
+├── search.py               # 命令行关键词检索脚本
+├── loader/datas.json       # 数据集配置
+├── 全唐诗/                 # 唐诗宋诗数据
+├── 宋词/                   # 全宋词数据
+├── 诗经/ 楚辞/ 论语/ ...   # 其他古典文集
+└── output/                 # search.py 检索结果输出
+```
 
-本项目目的是借助技术来生成格式化(JSON)数据，让开发者更方便快速的构建诗词类应用程序。身单力薄，欢迎更多人来维护，你可以通过以下方法来参与贡献：
+---
 
-- 直接提交 PR 或者通过 issue 讨论来优化完善此数据库，理论上古诗歌体非宗教类都欢迎加入，部分有争议性的数据需要社区投票讨论决定是否加入。关于诗句的纠错在创建 PR 时请标明出处。更多规范请[参考贡献规范文档](https://github.com/chinese-poetry/chinese-poetry/wiki/%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE%E8%A7%84%E8%8C%83)。
+## 诗词数据集
 
-- 如果你没有办法直接参与完善的过程，你也可以通过 「[爱发电赞助](https://afdian.net/a/chinese-poetry)」  「[Patreon 周期性赞助](https://www.patreon.com/jackeygao)」 的形式来持续帮助并激励我去优化完善此数据库。如果您不喜欢周期性赞助，你也可以通过「[支付宝](https://github.com/jackeyGao/JackeyGao.github.io/blob/master/static/images/alipay.png)」或者「[微信赞赏码](https://github.com/jackeyGao/JackeyGao.github.io/blob/master/static/images/wechat.jpg)」进行一次性赞助(备注留下邮箱)。
+本项目诗词数据来源于 [chinese-poetry/chinese-poetry](https://github.com/chinese-poetry/chinese-poetry)，共收录：
 
-- 如有建议或吐槽，欢迎联系我的邮箱 gaojunqi@outlook.com。
+| 数据集 | 数量 |
+|--------|------|
+| 唐诗宋诗 | ~54,000 + ~260,000 首 |
+| 全宋词 | ~21,000 首 |
+| 五代花间集 / 南唐词 | ~800 首 |
+| 元曲 | ~30,000 首 |
+| 诗经 / 楚辞 / 论语 | 经典文献 |
+| 纳兰性德 / 曹操诗集 | 个人全集 |
+| 蒙学 | 三字经等蒙学典籍 |
+| **合计** | **~390,904 首** |
 
-无论通过哪种形式贡献最终都会使之变得更好！
+---
 
-### 赞助者
+## 技术栈
 
-无
+- **后端**：Flask + Requests（SSE 流式传输）
+- **AI**：DeepSeek API（`deepseek-v4-flash` / `deepseek-v4-pro`）
+- **检索**：本地 JSON 全文关键词匹配（模块级缓存）
+- **前端**：原生 JS（无框架）+ LCS Diff 引擎
+- **存储**：本地 JSON 文件（`lyric_app/tasks/`）
 
-### 贡献者
-
-<p align="center">
-<img src="https://opencollective.com/chinese-poetry/contributors.svg?width=890&button=false" alt="Contributors">
-</p>
-
-## 案例展示
-
-<details>
-  <summary>案例展示</summary>
-  
-- [中文诗歌主页](https://chinese-poetry.github.io)是一个基于浏览器的诗词网站，包含唐诗三百首、宋词三百首等文集。
-- [animalize](https://github.com/animalize) **/** [QuanTangshi](https://github.com/animalize/QuanTangshi)  *离线全唐诗 Android*
-- [justdark](https://github.com/justdark) **/** [pytorch-poetry-gen](https://github.com/justdark/pytorch-poetry-gen)  *a char-RNN based on pytorch*
-- [Clover27](https://github.com/Clover27) **/** [ancient-Chinese-poem-generator](https://github.com/Clover27/ancient-Chinese-poem-generator)  *Ancient-Chinese-Poem-Generator*
-- [chinese-poetry](https://github.com/chinese-poetry) **/** [poetry-calendar](http://chinese-poetry.github.io/poetry-calendar/)  *诗词周历*
-- [chenyuntc](https://github.com/chenyuntc) **/** [pytorch-book](https://github.com/chenyuntc/pytorch-book/blob/master/chapter9-神经网络写诗(CharRNN)/) *简体唐诗生成(char-RNN)，可生成藏头诗，自定义诗歌意境，前缀等。*
-- [okcy1016](https://github.com/okcy1016) **/** [poetry-desktop](https://github.com/okcy1016/poetry-desktop/) *诗词桌面*
-- [huangjianke](https://github.com/huangjianke) **/** [weapp-poem](https://github.com/huangjianke/weapp-poem/) *诗词墨客 小程序版*
-- [汉字之美](https://hz.xusenlin.com/) *汉字之美是一个方便查询的诗词网站，简洁干净，方便使用。*
-- [PaddlePaddle](https://github.com/PaddlePaddle) **/** [PaddleNLP](https://github.com/PaddlePaddle/PaddleNLP#%E4%BA%A4%E4%BA%92%E5%BC%8Fnotebook%E6%95%99%E7%A8%8B) *基于ERNIE-GEN(Transformer)的深度学习诗词生成，可自行修改逻辑来生成多种诗词风格。*
-- [Harold-y](https://github.com/Harold-y) **/** [chinese-poetry-db-web](https://github.com/Harold-y/chinese-poetry-db-web) *基于本仓库的MySQL DB整合 + 诗词Web端展示与检索*
-  
-</details>
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=chinese-poetry/chinese-poetry&type=Date)](https://star-history.com/#chinese-poetry/chinese-poetry&Date)
+---
 
 ## License
 
-[MIT](https://github.com/chinese-poetry/chinese-poetry/blob/master/LICENSE) 许可证。
+诗词数据遵循原仓库 [MIT License](./LICENSE)。`lyric_app` 应用代码同为 MIT。

@@ -2,3 +2,12 @@
 .pyenv
 __pycache__
 .pytest_cache
+*.pyc
+*.pyo
+
+# App config (contains API key)
+lyric_app/config.json
+
+# Generated output
+output/
+log.log
