@@ -524,6 +524,15 @@
             if (streamEl) { streamEl.remove(); streamEl = null; }
             hideLoading();
             applyAiParts(evt.parts, context);
+            // Persist AI output immediately — merge new parts over the context we sent.
+            // This runs before the user reviews diffs, so the latest AI content is always saved.
+            if (evt.parts && Object.keys(evt.parts).length) {
+              const merged = { ...context };
+              for (const [k, v] of Object.entries(evt.parts)) {
+                if (v) merged[k] = v;
+              }
+              saveContextToServer(merged);
+            }
 
           } else if (evt.type === 'error') {
             if (streamEl) { streamEl.remove(); streamEl = null; }
@@ -730,6 +739,7 @@
     if (!dr) return;
     textarea(field).value = dr.getAcceptedText();
     exitDiffMode(field);
+    scheduleAutoSave();
   }
 
   function acceptAllDiff(field) {
@@ -1182,17 +1192,22 @@
     }
   }
 
+  function saveContextToServer(ctx) {
+    if (!state.taskId) return;
+    fetch(`/api/tasks/${state.taskId}/context`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context: ctx }),
+    }).catch(() => {});
+  }
+
   // Auto-save context when user edits a textarea directly
   let _autoSaveTimer = null;
   function scheduleAutoSave() {
     clearTimeout(_autoSaveTimer);
     _autoSaveTimer = setTimeout(() => {
       if (!state.taskId) return;
-      fetch(`/api/tasks/${state.taskId}/context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: getEditorContext() }),
-      }).catch(() => {});
+      saveContextToServer(getEditorContext());
     }, 1500);
   }
 
