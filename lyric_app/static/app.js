@@ -1250,51 +1250,306 @@
 {{请在此粘贴小说段落（建议500字以内的关键场景）}}`,
       },
     ],
+    styles: [
+      {
+        id: 'style-shanhetu',
+        name: '国风说唱 · 山河图',
+        desc: '凤凰传奇《山河图》— 大气磅礴，民族风+说唱',
+        text: `你是一位擅长国风说唱的创作人，参考凤凰传奇《山河图》的风格。
+核心风格：国风说唱，大气磅礴，民族风融合现代说唱。
+情感基调：热血激昂、史诗感。
+结构要求：[Intro]→[Verse]×2→[Chorus]×2→[Interlude]→[Verse]×2→[Chorus]→[Bridge]→[Chorus]×2→[Outro]
+编曲参考：120BPM，宫调五声音阶，4/4拍；古筝轮指开场，琵琶扫弦，电子合成器铺底，重型鼓组+Trap Hi-hat，间奏笛子solo。
+演唱参考：男声厚实沉稳说唱承担主歌叙事，女声嘹亮高音hook副歌。
+语言风格：主歌用说唱体（七言为主，双押），副歌用咏叹体（四字/五字短句，气势磅礴）。
+意象要求：山水地理+书法绘画+历史朝代。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-tashanhe',
+        name: '古风流行 · 踏山河',
+        desc: '是七叔呢《踏山河》— 江湖侠气，电声古风',
+        text: `你是一位擅长古风流行创作的音乐人，参考是七叔呢《踏山河》的风格。
+核心风格：古风流行，江湖侠气，电声打底的古风框架。
+情感基调：江湖侠气、洒脱不羁。
+结构要求：[Intro]→[Verse]→[Pre-Chorus]→[Chorus]→[Verse]→[Pre-Chorus]→[Chorus]→[Bridge]→[Chorus]×2→[Outro]
+编曲参考：90BPM，商调五声音阶，4/4拍；钢琴引入前奏，吉他与古筝叠加，电子鼓组+扫弦，副歌段加入戏腔元素。
+演唱参考：男声中低音主唱，薄音为主，副歌模进到高音爆发。
+语言风格：主歌七八言古体（偏流行古词语感），副歌四字/六字短句提炼。
+意象要求：刀剑+马+长河+群峰+尘土。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-wanjiang',
+        name: '国风戏腔 · 万疆',
+        desc: '李玉刚《万疆》— 家国情怀，戏曲+流行',
+        text: `你是一位擅长国风戏腔创作的音乐人，参考李玉刚《万疆》的风格。
+核心风格：国风戏腔，家国情怀，戏曲与流行的深度融合。
+情感基调：深情厚重、家国情怀。
+结构要求：[Intro]→[Verse]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]×2→[Outro]
+编曲参考：72BPM，征调五声音阶，4/4拍；二胡拉弦引入，合唱和声基底，编钟节奏，稳健鼓组，间奏大提琴。
+演唱参考：男声中低音主唱+女声和声，副歌转换为戏腔。
+语言风格：主歌白话古体（散句渲染），副歌入戏腔（字正腔圆，一字一音）。
+意象要求：红日+大地+红船+山川+灯火。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-chiling',
+        name: '古风戏腔 · 赤伶',
+        desc: 'HITA《赤伶》— 悲壮叙事，戏腔大殿',
+        text: `你是一位擅长古风戏腔叙事的创作人，参考HITA《赤伶》的风格。
+核心风格：古风戏腔，叙事悲情，戏曲结构与现代流行对撞。
+情感基调：悲壮惊魂、忧国怆然。
+结构要求：[Intro]→[Verse]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：68BPM，角调五声音阶，4/4拍；古筝清拨开场，大提琴间奏，编钟节奏骨架，制式鼓组基底。
+演唱参考：女声一人分饰两角，主歌模进至副歌转换为戏腔大殿。
+语言风格：主歌古典诗词化（百字为主，注重意境），副歌戏腔入调（平贴中字，拖腔延缓）。
+意象要求：台前幕后+红脸+衣衫+灯火+哭笑。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-guanshanjiu',
+        name: '古风江湖 · 关山酒',
+        desc: '等什么君《关山酒》— 洒脱戏腔，江湖快意',
+        text: `你是一位擅长古风江湖风格的音乐人，参考等什么君《关山酒》的风格。
+核心风格：古风江湖，洒脱戏腔，英俊洒脱的武侠世界。
+情感基调：洒脱交融、江湖快意。
+结构要求：[Intro]→[Verse]→[Pre-Chorus]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：95BPM，宫调五声音阶，4/4拍；琵琶快速扫弦引入，电子合成铺底，快速六弦滚打。
+演唱参考：女声主唱，主歌偏中音域，副歌转戏腔高音。
+语言风格：主歌七言古体（偏流动感），副歌六八字提炼（戏腔入调）。
+意象要求：关山+美酒+少年+侠客+梦中。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-yuxitan',
+        name: '古风叙事 · 虞兮叹',
+        desc: '闻人听书《虞兮叹》— 楚汉悲歌，历史戏腔',
+        text: `你是一位擅长古风历史叙事创作的音乐人，参考闻人听书《虞兮叹》的风格。
+核心风格：古风叙事，楚汉悲歌，历史与戏曲的深度融合。
+情感基调：悲壮温情、历史叙事。
+结构要求：[Intro]→[Verse]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：80BPM，商调五声音阶，4/4拍；古筝散板引入，戳鼓点节奏，民乐组+弦乐基底，副歌段模进加入大提琴。
+演唱参考：男声中音主唱，偏声乐化，副歌转换为戏腔。
+语言风格：主歌古体讲述（百字为主，讲故事），副歌戏腔华彩（拖腔延韵）。
+意象要求：当山+属尘+乌礁+美人+剑。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-yixiaojianghu',
+        name: '古风DJ · 一笑江湖',
+        desc: '闻人听书《一笑江湖》— 快意恩仇，电子国风',
+        text: `你是一位擅长古风DJ电子风格的音乐人，参考闻人听书《一笑江湖》（科目三）的风格。
+核心风格：古风DJ，江湖快意，古风与电子节奏的冲撞。
+情感基调：洒脱火热、快意恩仇。
+结构要求：[Intro]→[Verse]→[Pre-Chorus]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：128BPM，宫调五声音阶，4/4拍；古筝快速扫弦引入，电子鼓组+深度节拍+合成器，快速钢琴弹奏。
+演唱参考：男声中低音主唱，对白式唱腔，副歌模进到高音爆发。
+语言风格：主歌七八言（偏对白式，节奏明快），副歌六八言（气势张扬）。
+意象要求：江湖+笑+沙场+马+沉浮。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-xuelongyin',
+        name: '国风说唱 · 雪龙吟',
+        desc: '张杰《雪龙吟》— 激昂热血，摇滚+说唱',
+        text: `你是一位擅长激昂国风说唱的音乐人，参考张杰《雪龙吟》的风格。
+核心风格：国风说唱，激昂热血，吉他摇滚与说唱的混血。
+情感基调：燃烧热血、英勇无畏。
+结构要求：[Intro]→[Verse]→[Pre-Chorus]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：140BPM，宫调五声音阶，4/4拍；吉他失真引入，重型鼓组+摇滚节奏+合成器，间奏京剧打击乐。
+演唱参考：男声高音爆发，主歌说唱+副歌高音咏叹。
+语言风格：主歌七八言说唱（双押，节奏快），副歌八字呼号（气势张扬）。
+意象要求：飞龙+白雪+山峰+战场+光芒。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-xixiangxunta',
+        name: '国风R&B · 西厢寻他',
+        desc: '唐伯虎Annie《西厢寻他》— 戏腔转音，东方R&B',
+        text: `你是一位擅长国风R&B的音乐人，参考唐伯虎Annie《西厢寻他》的风格。
+核心风格：国风R&B，戏腔转音，东方韵味与西方节奏的碰撞。
+情感基调：柔情舒缓、戏腔怦然。
+结构要求：[Intro]→[Verse]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：88BPM，征调五声音阶，4/4拍；古筝散板引入，R&B节奏+合成器，爵士钢琴点缀。
+演唱参考：女声中低音主唱，偏戏腔化唱腔，副歌模进到高音转音。
+语言风格：主歌古体诗词化（偏散句），副歌戏腔入调（拖腔转音）。
+意象要求：西厢+玉瓦+人家+红尘+笔墨。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+      {
+        id: 'style-qiansixi',
+        name: '古风戏腔 · 牵丝戏',
+        desc: '银临《牵丝戏》— 催泪悲情，傀儡戏腔',
+        text: `你是一位擅长催泪古风戏腔的音乐人，参考银临《牵丝戏》的风格。
+核心风格：古风戏腔，催泪悲情，戏曲元素与民谣形式的碰撞。
+情感基调：催泪悲情、心碎还魂。
+结构要求：[Intro]→[Verse]→[Chorus]→[Verse]→[Chorus]→[Bridge]→[Chorus]→[Outro]
+编曲参考：72BPM，角调五声音阶，4/4拍；古筝散板引入，编钟节奏骨架，京剧鼓点。
+演唱参考：女声中高音主唱，偏戏腔化唱腔，副歌高音爆发。
+语言风格：主歌古体诗词化（偏散句），副歌戏腔入调（拖腔转音）。
+意象要求：傀儡+丝线+舞台+人家+一场梦。
+输出格式：标注段落标签，每句单独一行，段间空行。
+
+===风格描述===
+[根据上述参考，结合具体内容写120字以上风格描述]
+
+===歌词===
+[完整歌词，标注段落标签]
+
+===标题===
+[建议歌名]
+
+用户提供的素材如下：
+{{请在此粘贴古诗词内容}}`,
+      },
+    ],
   };
 
   function renderTemplateList(cat) {
     const list = PROMPT_TEMPLATES[cat] || [];
-    dom.templateList.innerHTML = list.map(t =>
+    let html = '';
+
+    // Random style button for styles category
+    if (cat === 'styles' && list.length) {
+      html += `<button class="tmpl-btn tmpl-btn-random" id="btn-random-style">
+        <div class="tmpl-btn-name">🎲 随机风格</div>
+        <div class="tmpl-btn-desc">从 10 种古风风格中随机选一个</div>
+      </button>`;
+    }
+
+    html += list.map(t =>
       `<button class="tmpl-btn" data-id="${t.id}">
         <div class="tmpl-btn-name">${t.name}</div>
         <div class="tmpl-btn-desc">${t.desc}</div>
       </button>`
     ).join('');
 
-    dom.templateList.querySelectorAll('.tmpl-btn').forEach(btn => {
+    dom.templateList.innerHTML = html;
+
+    // Random style button handler
+    const randomBtn = dom.templateList.querySelector('#btn-random-style');
+    if (randomBtn) {
+      randomBtn.addEventListener('click', () => {
+        const tmpl = list[Math.floor(Math.random() * list.length)];
+        applyTemplate(tmpl);
+      });
+    }
+
+    dom.templateList.querySelectorAll('.tmpl-btn:not(.tmpl-btn-random)').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
         const tmpl = Object.values(PROMPT_TEMPLATES).flat().find(t => t.id === id);
         if (!tmpl) return;
-
-        setChatText(tmpl.text);
-        state.currentTemplate = { id: tmpl.id, text: tmpl.text };
-
-        const phStart = tmpl.text.indexOf('{{');
-        const phEnd = tmpl.text.indexOf('}}') + 2;
-        dom.chatInput.focus();
-        if (phStart !== -1 && phStart < phEnd) {
-          // Select the placeholder text in contenteditable
-          const walker = document.createTreeWalker(dom.chatInput, NodeFilter.SHOW_TEXT, null, false);
-          let current = 0;
-          let node;
-          while ((node = walker.nextNode())) {
-            const len = node.textContent.length;
-            if (current + len >= phStart) {
-              const range = document.createRange();
-              range.setStart(node, phStart - current);
-              const endNode = phEnd <= current + len ? node : walker.nextNode() || node;
-              const endOffset = phEnd <= current + len ? phEnd - current : phEnd - (current + len);
-              range.setEnd(endNode, Math.min(endOffset, endNode.textContent.length));
-              const sel = window.getSelection();
-              sel.removeAllRanges();
-              sel.addRange(range);
-              break;
-            }
-            current += len;
-          }
-        }
-        toggleTemplatePanel(false);
+        applyTemplate(tmpl);
       });
     });
   }
@@ -1305,6 +1560,37 @@
     dom.btnTemplate.style.borderColor = state.templateOpen ? 'var(--accent)' : '';
     dom.btnTemplate.style.color = state.templateOpen ? 'var(--accent)' : '';
     if (state.templateOpen) renderTemplateList(state.currentTemplateCat);
+  }
+
+  /** Apply a template: fill chat input, select placeholder, close panel. */
+  function applyTemplate(tmpl) {
+    setChatText(tmpl.text);
+    state.currentTemplate = { id: tmpl.id, text: tmpl.text };
+
+    const phStart = tmpl.text.indexOf('{{');
+    const phEnd = tmpl.text.indexOf('}}') + 2;
+    dom.chatInput.focus();
+    if (phStart !== -1 && phStart < phEnd) {
+      const walker = document.createTreeWalker(dom.chatInput, NodeFilter.SHOW_TEXT, null, false);
+      let current = 0;
+      let node;
+      while ((node = walker.nextNode())) {
+        const len = node.textContent.length;
+        if (current + len >= phStart) {
+          const range = document.createRange();
+          range.setStart(node, phStart - current);
+          const endNode = phEnd <= current + len ? node : walker.nextNode() || node;
+          const endOffset = phEnd <= current + len ? phEnd - current : phEnd - (current + len);
+          range.setEnd(endNode, Math.min(endOffset, endNode.textContent.length));
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          break;
+        }
+        current += len;
+      }
+    }
+    toggleTemplatePanel(false);
   }
 
   // ─── Resize handle ─────────────────────────────────────────

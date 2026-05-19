@@ -594,6 +594,16 @@ select.form-input { appearance: auto; cursor: pointer; }
 .tmpl-btn-name { font-weight: 600; color: var(--text); font-size: var(--font-size-sm); margin-bottom: 1px; }
 .tmpl-btn-desc { font-size: 11px; color: var(--text-muted); }
 
+.tmpl-btn-random {
+  border-color: var(--warning) !important;
+  background: rgba(204,167,0,0.08) !important;
+}
+.tmpl-btn-random:hover {
+  border-color: var(--warning) !important;
+  background: rgba(204,167,0,0.15) !important;
+}
+.tmpl-btn-random .tmpl-btn-name { color: var(--warning); }
+
 /* ─── Chat Input Area ───────────────────────────────────────── */
 .chat-input-area {
   display: flex;
