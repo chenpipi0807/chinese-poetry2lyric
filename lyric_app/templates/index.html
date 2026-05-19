@@ -45,6 +45,24 @@
     <!-- ── Editor Panel ───────────────────────────────────────── -->
     <div class="editor-panel">
 
+      <!-- Search / Replace Bar -->
+      <div class="search-bar" id="search-bar" style="display:none">
+        <div class="search-row">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" class="search-input" id="search-input" placeholder="搜索（支持正则）">
+          <span class="search-count" id="search-count"></span>
+          <button class="search-nav-btn" id="btn-search-prev" title="上一个 (Shift+Enter)">▲</button>
+          <button class="search-nav-btn" id="btn-search-next" title="下一个 (Enter)">▼</button>
+          <button class="search-nav-btn" id="btn-search-close" title="关闭 (Escape)">✕</button>
+        </div>
+        <div class="search-row">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <input type="text" class="search-input" id="replace-input" placeholder="替换为（留空则删除）">
+          <button class="btn btn-sm" id="btn-replace-one" title="替换当前">替换</button>
+          <button class="btn btn-sm" id="btn-replace-all" title="全部替换">全部替换</button>
+        </div>
+      </div>
+
       <!-- 标题 -->
       <div class="editor-section section-title" data-field="title">
         <div class="section-header">
@@ -135,7 +153,8 @@
           <div class="message-content">
             <p><strong>欢迎使用歌词创作助手</strong></p>
             <p>在下方输入框中：</p>
-            <p>• 输入单个关键词（如 <strong>青青</strong>、<strong>离别</strong>）→ 自动检索相关古典诗词作为参考，再以此为主题创作</p>
+            <p>• 用 <strong>#关键词</strong> 触发诗词检索（如 <strong>#刀 #刀客 写一首歌</strong>）</p>
+            <p>• 或直接在聊天框输入关键词/创作要求 → 自动识别并检索</p>
             <p>• 输入创作要求（如 <strong>写一首思乡的古风歌曲</strong>）→ 直接创作</p>
             <p>• 继续对话来润色和调整，同一任务下历史会保留</p>
             <p>• 点击 <strong>新建任务</strong> 开始全新的创作</p>
@@ -160,8 +179,9 @@
             <input type="checkbox" id="rag-toggle" checked>
             <span>RAG 参考</span>
           </label>
-          <span class="rag-hint" id="rag-hint">开启后自动检索本地诗词库作为创作参考</span>
+          <span class="rag-hint" id="rag-hint">在聊天框用 #关键词 触发检索，如 #刀 #刀客 写一首歌</span>
         </div>
+
         <div class="target-fields">
           <label class="field-checkbox"><input type="checkbox" id="chk-all" checked> 全部</label>
           <label class="field-checkbox"><input type="checkbox" id="chk-title"> 标题</label>
@@ -169,12 +189,12 @@
           <label class="field-checkbox"><input type="checkbox" id="chk-lyrics"> 歌词</label>
         </div>
         <div class="chat-textarea-resize" id="resize-handle"></div>
-        <textarea
+        <div
           class="chat-input"
           id="chat-input"
-          placeholder="输入关键词或创作需求...（Enter 发送，Shift+Enter 换行）"
-          rows="3"
-        ></textarea>
+          contenteditable="true"
+          data-placeholder="#关键词 触发诗词检索，如：#刀 #刀客 写一首江湖的歌（Enter 发送，Shift+Enter 换行）"
+        ></div>
         <div class="chat-input-footer">
           <div class="chat-input-footer-left">
             <button class="btn btn-sm" id="btn-template" title="快捷模板">模板</button>

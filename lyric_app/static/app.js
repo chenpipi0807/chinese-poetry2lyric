@@ -123,7 +123,10 @@
     ragEnabled: true,
     templateOpen: false,
     currentTemplateCat: 'poetry',
+    currentTemplate: null,
     diffState: { title: null, style: null, lyrics: null },
+    // Search/replace state
+    search: { visible: false, matches: [], currentIdx: 0, searchText: '', replaceText: '' },
   };
 
   // ─── DOM refs ──────────────────────────────────────────────
@@ -139,6 +142,8 @@
     templateList:    $('template-list'),
     loadingOverlay:  $('loading-overlay'),
     loadingText:     $('loading-text'),
+    ragToggle:       $('rag-toggle'),
+    ragToggleLabel:  $('rag-toggle-label'),
     ragToggle:       $('rag-toggle'),
     ragToggleLabel:  $('rag-toggle-label'),
     ragHint:         $('rag-hint'),
@@ -169,6 +174,16 @@
     historyOverlay:  $('history-overlay'),
     historyList:     $('history-list'),
     btnCloseHistory: $('btn-close-history'),
+    // Search bar
+    searchBar:       $('search-bar'),
+    searchInput:     $('search-input'),
+    replaceInput:    $('replace-input'),
+    searchCount:     $('search-count'),
+    btnSearchPrev:   $('btn-search-prev'),
+    btnSearchNext:   $('btn-search-next'),
+    btnSearchClose:  $('btn-search-close'),
+    btnReplaceOne:   $('btn-replace-one'),
+    btnReplaceAll:   $('btn-replace-all'),
   };
 
   const FIELDS = ['title', 'style', 'lyrics'];
@@ -275,6 +290,8 @@
       exitDiffMode(f);
       textarea(f).value = '';
     });
+    // Clear template state
+    state.currentTemplate = null;
     // Clear chat
     dom.chatMessages.innerHTML = `
       <div class="message ai">
@@ -379,7 +396,119 @@
     return r.json();
   }
 
-  function showRagCard(results, keyword, agentKeywords) {
+  function parseKeywords(raw) {
+    if (!raw || !raw.trim()) return [];
+    // Split by any combination of spaces, commas, or Chinese commas
+    return raw.split(/[\s,，、]+/).map(k => k.trim()).filter(Boolean);
+  }
+
+  /** Extract #keyword patterns from text. Returns {keywords, cleanText}. */
+  function extractHashKeywords(text) {
+    const keywords = [];
+    const cleanText = text.replace(/#\s*(\S+)/g, (match, kw) => {
+      keywords.push(kw);
+      return '';
+    }).replace(/\s{2,}/g, ' ').trim();
+    return { keywords, cleanText };
+  }
+
+  /** Get plain text from contenteditable chat input. */
+  function getChatText() {
+    return (dom.chatInput.textContent || '').trimEnd();
+  }
+
+  /** Set plain text into contenteditable chat input. */
+  function setChatText(text) {
+    dom.chatInput.textContent = text;
+    scheduleHashHighlight();
+  }
+
+  /** Save cursor offset in a text node (relative to the contenteditable). */
+  function _saveCursor() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !dom.chatInput.contains(sel.anchorNode)) return null;
+    const range = sel.getRangeAt(0);
+    const pre = document.createRange();
+    pre.selectNodeContents(dom.chatInput);
+    pre.setEnd(range.startContainer, range.startOffset);
+    return pre.toString().length;
+  }
+
+  /** Restore cursor to a text offset inside the contenteditable. */
+  function _restoreCursor(offset) {
+    if (offset === null || offset === undefined) return;
+    const walker = document.createTreeWalker(dom.chatInput, NodeFilter.SHOW_TEXT, null, false);
+    let current = 0;
+    let node;
+    while ((node = walker.nextNode())) {
+      const len = node.textContent.length;
+      if (current + len >= offset) {
+        const range = document.createRange();
+        range.setStart(node, offset - current);
+        range.collapse(true);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return;
+      }
+      current += len;
+    }
+  }
+
+  /** Highlight #keyword in contenteditable with span wrapping. */
+  function highlightHashInChat() {
+    if (!dom.chatInput) return;
+    // Skip during IME composition (拼音输入中) to avoid capturing pinyin as text
+    if (_isComposing) return;
+    const offset = _saveCursor();
+    const text = dom.chatInput.textContent || '';
+    const html = escapeHtml(text).replace(
+      /(#\s*\S+)/g,
+      '<span class="hash-kw">$1</span>'
+    );
+    if (dom.chatInput.innerHTML !== html) {
+      dom.chatInput.innerHTML = html;
+      _restoreCursor(offset);
+    }
+  }
+
+  let _hashHighlightTimer = null;
+  let _isComposing = false;
+  function scheduleHashHighlight() {
+    clearTimeout(_hashHighlightTimer);
+    _hashHighlightTimer = setTimeout(highlightHashInChat, 300);
+  }
+
+  async function doMultiRagSearch(keywords) {
+    // Search each keyword in parallel, merge and deduplicate results
+    const allResults = [];
+    const seen = new Set();
+
+    const promises = keywords.map(kw =>
+      fetch('/api/rag/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword: kw }),
+      }).then(r => r.json())
+    );
+
+    const responses = await Promise.all(promises);
+    for (let i = 0; i < responses.length; i++) {
+      const data = responses[i];
+      const kw = keywords[i];
+      for (const poem of (data.results || [])) {
+        const key = `${poem.title || ''}|${poem.author || ''}|${(poem.lines || []).slice(0, 2).join('')}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        poem.matched_keyword = kw;
+        allResults.push(poem);
+      }
+    }
+
+    return { results: allResults.slice(0, 30), count: allResults.length, keywords };
+  }
+
+  function showRagCard(results, keyword, agentKeywords, autoExpand) {
     if (!results || !results.length) return;
 
     const card = document.createElement('div');
@@ -392,11 +521,12 @@
 
     const header = document.createElement('div');
     header.className = 'rag-card-header';
-    header.innerHTML = `<span class="rag-card-title-text">${escapeHtml(headerTitle)}</span><span class="rag-expand-btn">▶ 展开</span>`;
+    const expandLabel = autoExpand ? '▼ 收起' : '▶ 展开';
+    header.innerHTML = `<span class="rag-card-title-text">${escapeHtml(headerTitle)}</span><span class="rag-expand-btn">${expandLabel}</span>`;
 
     const content = document.createElement('div');
     content.className = 'rag-card-content';
-    content.style.display = 'none';
+    content.style.display = autoExpand ? 'block' : 'none';
 
     let html = '';
     for (const poem of results.slice(0, 15)) {
@@ -426,44 +556,110 @@
 
   // ─── Chat / Send ───────────────────────────────────────────
   async function sendMessage(overrideText) {
-    const text = overrideText || dom.chatInput.value.trim();
+    const text = overrideText || getChatText();
     if (!text || state.isLoading) return;
-    if (!overrideText) dom.chatInput.value = '';
+    if (!overrideText) setChatText('');
 
     addUserMessage(text);
 
     const ragEnabled = dom.ragToggle.checked;
     const targetFields = getTargetFields();
     const context = getEditorContext();
+    const templateText = state.currentTemplate ? state.currentTemplate.text : null;
+    state.currentTemplate = null;
+
+    // Extract #keywords from the message
+    const { keywords: hashKeywords, cleanText } = extractHashKeywords(text);
+    // If #keywords found, use cleaned text for AI; otherwise use original
+    const effectiveMessage = hashKeywords.length ? (cleanText || hashKeywords.join(' ')) : text;
 
     let ragResults = [];
     let agentKeywords = [];
 
-    // RAG phase — triggered for simple keywords OR template messages with a short keyword at the end
-    const ragKeyword = ragEnabled ? extractRagKeyword(text) : null;
-    if (ragKeyword) {
-      showLoading('RAG 检索中...');
-
-      const ragData = await doRagSearch(ragKeyword);
-      if (ragData.results && ragData.results.length) {
-        ragResults = ragData.results;
-        showRagCard(ragResults, ragKeyword, null);
-        dom.ragHint.textContent = `找到 ${ragResults.length} 首相关诗词`;
+    // RAG phase — use #keywords from chat, or auto-extract from message
+    const manualKeywords = ragEnabled ? hashKeywords : [];
+    if (manualKeywords.length > 0) {
+      // User typed keywords manually — search all of them
+      showLoading(`RAG 检索「${manualKeywords.join('、')}」中...`);
+      const multiData = await doMultiRagSearch(manualKeywords);
+      if (multiData.results && multiData.results.length) {
+        ragResults = multiData.results;
+        const kwLabel = manualKeywords.join('、');
+        showRagCard(ragResults, kwLabel, null, true);
+        dom.ragHint.textContent = `多词搜索找到 ${ragResults.length} 首相关诗词`;
       } else {
-        // Agent decides to search related keywords
-        addAIMessage(`🔍 「${ragKeyword}」未直接匹配，正在智能扩展搜索词...`);
-        const agentData = await doAgentSearch(ragKeyword);
+        // Try agent search with the first keyword for expansion
+        const searchMsgEl = addAIMessageEl(`🔍 「${escapeHtml(manualKeywords.join('、'))}」均未直接匹配，正在智能扩展搜索词...`);
+        const agentData = await doAgentSearch(manualKeywords[0]);
+        const agentKwList = agentData.keywords || [];
+
         if (agentData.results && agentData.results.length) {
           ragResults = agentData.results;
-          agentKeywords = agentData.keywords || [];
-          showRagCard(ragResults, ragKeyword, agentKeywords);
+          agentKeywords = agentKwList;
+          searchMsgEl.querySelector('.message-content p').innerHTML =
+            `🔍 「${escapeHtml(manualKeywords.join('、'))}」未直接匹配，扩展词：<strong>${escapeHtml(agentKwList.join('、'))}</strong>，搜到 ${ragResults.length} 首 ↓`;
+          showRagCard(ragResults, manualKeywords.join('、'), agentKeywords, true);
           dom.ragHint.textContent = `扩展搜索找到 ${ragResults.length} 首相关诗词`;
+        } else if (agentData.status === 'no_api_key') {
+          searchMsgEl.querySelector('.message-content p').innerHTML =
+            `🔍 「${escapeHtml(manualKeywords.join('、'))}」未直接匹配，<strong>请先配置 API Key</strong> 以启用智能扩展搜索，将直接创作。`;
+          dom.ragHint.textContent = '未配置 API Key，直接创作';
         } else {
+          const kwInfo = agentKwList.length
+            ? `扩展词：<strong>${escapeHtml(agentKwList.join('、'))}</strong>，均未匹配`
+            : '智能扩展搜索完成，';
+          searchMsgEl.querySelector('.message-content p').innerHTML =
+            `🔍 「${escapeHtml(manualKeywords.join('、'))}」${kwInfo}，将直接创作。`;
           dom.ragHint.textContent = '未找到相关诗词，直接创作';
         }
       }
-    } else if (ragEnabled) {
-      dom.ragHint.textContent = '非关键词输入，直接创作';
+    } else {
+      // No manual keywords — auto-extract from chat message
+      const ragKeyword = ragEnabled ? extractRagKeyword(effectiveMessage) : null;
+      if (ragKeyword) {
+        showLoading('RAG 检索中...');
+
+        const ragData = await doRagSearch(ragKeyword);
+        if (ragData.results && ragData.results.length) {
+          ragResults = ragData.results;
+          showRagCard(ragResults, ragKeyword, null);
+          dom.ragHint.textContent = `找到 ${ragResults.length} 首相关诗词`;
+        } else {
+          // Agent decides to search related keywords
+          const searchMsgEl = addAIMessageEl(`🔍 「${ragKeyword}」未直接匹配，正在智能扩展搜索词...`);
+          const agentData = await doAgentSearch(ragKeyword);
+          const agentKwList = agentData.keywords || [];
+
+          if (agentData.results && agentData.results.length) {
+            ragResults = agentData.results;
+            agentKeywords = agentKwList;
+            searchMsgEl.querySelector('.message-content p').innerHTML =
+              `🔍 「${escapeHtml(ragKeyword)}」未直接匹配，扩展词：<strong>${escapeHtml(agentKwList.join('、'))}</strong>，搜到 ${ragResults.length} 首 ↓`;
+            showRagCard(ragResults, ragKeyword, agentKeywords, true);
+            dom.ragHint.textContent = `扩展搜索找到 ${ragResults.length} 首相关诗词`;
+          } else if (agentData.status === 'no_api_key') {
+            searchMsgEl.querySelector('.message-content p').innerHTML =
+              `🔍 「${escapeHtml(ragKeyword)}」未直接匹配，<strong>请先配置 API Key</strong> 以启用智能扩展搜索，将直接创作。`;
+            dom.ragHint.textContent = '未配置 API Key，直接创作';
+          } else if (agentData.status === 'ai_error') {
+            const kwInfo = agentKwList.length
+              ? `扩展词：<strong>${escapeHtml(agentKwList.join('、'))}</strong>，均未匹配`
+              : '智能扩展搜索出错，';
+            searchMsgEl.querySelector('.message-content p').innerHTML =
+              `🔍 「${escapeHtml(ragKeyword)}」${kwInfo}，将直接创作。`;
+            dom.ragHint.textContent = '扩展搜索出错，直接创作';
+          } else {
+            const kwInfo = agentKwList.length
+              ? `扩展词：<strong>${escapeHtml(agentKwList.join('、'))}</strong>，均未匹配`
+              : '智能扩展搜索完成，';
+            searchMsgEl.querySelector('.message-content p').innerHTML =
+              `🔍 「${escapeHtml(ragKeyword)}」${kwInfo}，将直接创作。`;
+            dom.ragHint.textContent = '未找到相关诗词，直接创作';
+          }
+        }
+      } else if (ragEnabled) {
+        dom.ragHint.textContent = '非关键词输入，直接创作';
+      }
     }
 
     // Stream AI response
@@ -478,10 +674,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_id: state.taskId,
-          message: text,
+          message: effectiveMessage,
           context,
           rag_results: ragResults,
           target_fields: targetFields,
+          template_text: templateText,
         }),
       });
 
@@ -589,7 +786,7 @@
     dom.chkStyle.checked = false;
     dom.chkLyrics.checked = true;
     const msg = `请${labels[action]}以下歌词，保持原有主题：\n${textarea('lyrics').value || '（歌词为空，请先生成歌词）'}`;
-    dom.chatInput.value = msg;
+    setChatText(msg);
   }
 
   // ─── Diff Mode ─────────────────────────────────────────────
@@ -766,12 +963,18 @@
   }
 
   function addAIMessage(text) {
+    const div = addAIMessageEl(text);
+    return div;
+  }
+
+  function addAIMessageEl(text) {
     const div = document.createElement('div');
     div.className = 'message ai';
     const fmt = escapeHtml(text).replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     div.innerHTML = `<div class="message-avatar">🤖</div><div class="message-content"><p>${fmt}</p></div>`;
     dom.chatMessages.appendChild(div);
     scrollChatToBottom();
+    return div;
   }
 
   function scrollChatToBottom() {
@@ -1063,14 +1266,33 @@
         const id = btn.dataset.id;
         const tmpl = Object.values(PROMPT_TEMPLATES).flat().find(t => t.id === id);
         if (!tmpl) return;
-        dom.chatInput.value = tmpl.text;
+
+        setChatText(tmpl.text);
+        state.currentTemplate = { id: tmpl.id, text: tmpl.text };
+
         const phStart = tmpl.text.indexOf('{{');
         const phEnd = tmpl.text.indexOf('}}') + 2;
-        if (phStart !== -1) {
-          dom.chatInput.focus();
-          dom.chatInput.setSelectionRange(phStart, phEnd);
-        } else {
-          dom.chatInput.focus();
+        dom.chatInput.focus();
+        if (phStart !== -1 && phStart < phEnd) {
+          // Select the placeholder text in contenteditable
+          const walker = document.createTreeWalker(dom.chatInput, NodeFilter.SHOW_TEXT, null, false);
+          let current = 0;
+          let node;
+          while ((node = walker.nextNode())) {
+            const len = node.textContent.length;
+            if (current + len >= phStart) {
+              const range = document.createRange();
+              range.setStart(node, phStart - current);
+              const endNode = phEnd <= current + len ? node : walker.nextNode() || node;
+              const endOffset = phEnd <= current + len ? phEnd - current : phEnd - (current + len);
+              range.setEnd(endNode, Math.min(endOffset, endNode.textContent.length));
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
+              break;
+            }
+            current += len;
+          }
         }
         toggleTemplatePanel(false);
       });
@@ -1269,11 +1491,167 @@
     }, 1500);
   }
 
+  // ─── Search / Replace ──────────────────────────────────────
+
+  /** All text-like inputs/textarea that participate in search. */
+  const SEARCH_TARGETS = () => [
+    textarea('title'),
+    textarea('style'),
+    textarea('lyrics'),
+    dom.chatInput,
+  ].filter(Boolean);
+
+  function openSearchBar() {
+    state.search.visible = true;
+    state.search.matches = [];
+    state.search.currentIdx = 0;
+    dom.searchBar.style.display = '';
+    dom.searchInput.value = state.search.searchText || '';
+    dom.replaceInput.value = state.search.replaceText || '';
+    dom.searchCount.textContent = '';
+    dom.searchInput.focus();
+    dom.searchInput.select();
+  }
+
+  function closeSearchBar() {
+    state.search.visible = false;
+    dom.searchBar.style.display = 'none';
+    // Clear any selection highlights
+    SEARCH_TARGETS().forEach(el => {
+      el.setSelectionRange(0, 0);
+      el.blur();
+    });
+  }
+
+  function doSearch() {
+    const raw = dom.searchInput.value;
+    state.search.searchText = raw;
+    state.search.matches = [];
+    state.search.currentIdx = 0;
+
+    if (!raw) {
+      dom.searchCount.textContent = '';
+      return;
+    }
+
+    let regex;
+    try {
+      regex = new RegExp(raw, 'gi');
+    } catch {
+      dom.searchCount.textContent = '正则无效';
+      return;
+    }
+
+    const targets = SEARCH_TARGETS();
+    for (const el of targets) {
+      const val = el.value || el.textContent || '';
+      let m;
+      while ((m = regex.exec(val)) !== null) {
+        state.search.matches.push({
+          target: el,
+          start: m.index,
+          end: m.index + m[0].length,
+          text: m[0],
+        });
+        if (m[0].length === 0) break; // Avoid infinite loop on zero-width
+      }
+    }
+
+    const total = state.search.matches.length;
+    dom.searchCount.textContent = total ? `${Math.min(state.search.currentIdx + 1, total)} / ${total}` : '0 个匹配';
+
+    if (total > 0) {
+      goToMatch(0);
+    }
+  }
+
+  function goToMatch(idx) {
+    const matches = state.search.matches;
+    if (!matches.length) return;
+
+    state.search.currentIdx = ((idx % matches.length) + matches.length) % matches.length;
+    const m = matches[state.search.currentIdx];
+    const el = m.target;
+
+    el.focus();
+    el.setSelectionRange(m.start, m.end);
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const total = matches.length;
+    dom.searchCount.textContent = `${state.search.currentIdx + 1} / ${total}`;
+  }
+
+  function nextMatch() {
+    if (!state.search.matches.length) { doSearch(); return; }
+    goToMatch(state.search.currentIdx + 1);
+  }
+
+  function prevMatch() {
+    if (!state.search.matches.length) { doSearch(); return; }
+    goToMatch(state.search.currentIdx - 1);
+  }
+
+  function replaceCurrent() {
+    const matches = state.search.matches;
+    if (!matches.length) return;
+
+    const m = matches[state.search.currentIdx];
+    const el = m.target;
+    const replaceWith = dom.replaceInput.value;
+    state.search.replaceText = replaceWith;
+
+    const val = el.value || el.textContent || '';
+    const newVal = val.slice(0, m.start) + replaceWith + val.slice(m.end);
+    if (el.value !== undefined) el.value = newVal;
+    else el.textContent = newVal;
+
+    // Re-search after replace
+    doSearch();
+  }
+
+  function replaceAll() {
+    const matches = state.search.matches;
+    if (!matches.length) return;
+
+    const replaceWith = dom.replaceInput.value;
+    state.search.replaceText = replaceWith;
+
+    // Group matches by target element, process in reverse offset order per target
+    const byTarget = new Map();
+    for (const m of matches) {
+      if (!byTarget.has(m.target)) byTarget.set(m.target, []);
+      byTarget.get(m.target).push(m);
+    }
+
+    for (const [el, ms] of byTarget) {
+      // Sort descending by start offset (reverse order preserves earlier offsets)
+      ms.sort((a, b) => b.start - a.start);
+      let val = el.value || el.textContent || '';
+      for (const m of ms) {
+        val = val.slice(0, m.start) + replaceWith + val.slice(m.end);
+      }
+      if (el.value !== undefined) el.value = val;
+      else el.textContent = val;
+    }
+
+    doSearch();
+  }
+
   // ─── Event Binding ─────────────────────────────────────────
   function bindEvents() {
     dom.btnSend.addEventListener('click', () => sendMessage());
     dom.chatInput.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+      // On any keystroke, schedule #keyword highlight
+      scheduleHashHighlight();
+    });
+    // Also highlight on paste
+    dom.chatInput.addEventListener('paste', () => scheduleHashHighlight());
+    // Track IME composition to avoid capturing pinyin
+    dom.chatInput.addEventListener('compositionstart', () => { _isComposing = true; });
+    dom.chatInput.addEventListener('compositionend', () => {
+      _isComposing = false;
+      scheduleHashHighlight(); // Now safe to highlight
     });
 
     dom.btnNewTask.addEventListener('click', newTask);
@@ -1306,6 +1684,49 @@
     dom.ragToggle.addEventListener('change', () => {
       dom.ragToggleLabel.classList.toggle('active', dom.ragToggle.checked);
     });
+
+    // ── Search / Replace bindings ──
+    // Ctrl+F / Cmd+F → open search bar
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        // Don't intercept in the search bar itself
+        if (e.target.closest('#search-bar')) return;
+        e.preventDefault();
+        openSearchBar();
+      }
+      if (e.key === 'Escape' && state.search.visible) {
+        e.preventDefault();
+        closeSearchBar();
+      }
+    });
+
+    // Search input: Enter → next, Shift+Enter → prev, typing → search
+    dom.searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.shiftKey) prevMatch();
+        else nextMatch();
+      }
+    });
+    dom.searchInput.addEventListener('input', () => {
+      clearTimeout(state._searchTimer);
+      state._searchTimer = setTimeout(doSearch, 200);
+    });
+
+    // Replace input
+    dom.replaceInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        replaceCurrent();
+      }
+    });
+
+    // Buttons
+    dom.btnSearchPrev.addEventListener('click', prevMatch);
+    dom.btnSearchNext.addEventListener('click', nextMatch);
+    dom.btnSearchClose.addEventListener('click', closeSearchBar);
+    dom.btnReplaceOne.addEventListener('click', replaceCurrent);
+    dom.btnReplaceAll.addEventListener('click', replaceAll);
 
     // Templates
     dom.btnTemplate.addEventListener('click', () => toggleTemplatePanel());

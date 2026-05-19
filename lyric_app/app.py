@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import time
 import uuid
 import requests
 from flask import Flask, render_template, request, Response, jsonify
@@ -17,6 +18,37 @@ os.makedirs(TASKS_DIR, exist_ok=True)
 
 # In-memory task store: task_id -> {history, context, created_at, updated_at}
 tasks = {}
+
+
+def _api_post_with_retry(api_key, json_body, max_retries=3, stream=False, timeout=(10, 120)):
+    """Call DeepSeek API with retry logic for transient SSL/network errors."""
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                DEEPSEEK_API_URL,
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json=json_body,
+                stream=stream,
+                timeout=timeout,
+            )
+            return resp, None
+        except requests.exceptions.SSLError as e:
+            last_error = f"SSL 连接失败（第{attempt+1}次尝试）: {e}"
+            if attempt < max_retries - 1:
+                time.sleep(1.5 * (attempt + 1))
+        except requests.exceptions.ConnectionError as e:
+            last_error = f"网络连接失败（第{attempt+1}次尝试）: {e}"
+            if attempt < max_retries - 1:
+                time.sleep(1.5 * (attempt + 1))
+        except requests.exceptions.Timeout as e:
+            last_error = f"请求超时（第{attempt+1}次尝试）"
+            if attempt < max_retries - 1:
+                time.sleep(1.5 * (attempt + 1))
+        except Exception as e:
+            last_error = str(e)
+            break  # Non-retryable error
+    return None, last_error
 
 
 def _task_path(task_id):
@@ -156,16 +188,18 @@ def test_key():
     if not api_key:
         return jsonify({"ok": False, "error": "未配置 API Key"})
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"model": "deepseek-v4-flash", "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 1},
-            timeout=10,
+        resp, err = _api_post_with_retry(
+            api_key,
+            json_body={"model": "deepseek-v4-flash", "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 1},
+            max_retries=2,
+            timeout=(10, 10),
         )
+        if err:
+            return jsonify({"ok": False, "error": err})
         if resp.ok:
             return jsonify({"ok": True})
-        err = resp.json().get("error", {}).get("message", resp.text[:200])
-        return jsonify({"ok": False, "error": err})
+        err_msg = resp.json().get("error", {}).get("message", resp.text[:200])
+        return jsonify({"ok": False, "error": err_msg})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
 
@@ -203,16 +237,19 @@ def rag_agent_search():
     keyword = data.get("keyword", "").strip()
     api_key = load_config().get("api_key", "")
 
-    if not keyword or not api_key:
-        return jsonify({"results": [], "keywords": []})
+    if not keyword:
+        return jsonify({"results": [], "keywords": [], "status": "no_keyword"})
+
+    if not api_key:
+        return jsonify({"results": [], "keywords": [], "status": "no_api_key"})
 
     # Ask AI for related classical poetry search terms
     related_keywords = []
+    status = "ok"
     try:
-        resp = requests.post(
-            DEEPSEEK_API_URL,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={
+        resp, err = _api_post_with_retry(
+            api_key,
+            json_body={
                 "model": "deepseek-v4-flash",
                 "messages": [{
                     "role": "user",
@@ -225,12 +262,15 @@ def rag_agent_search():
                 "max_tokens": 50,
                 "temperature": 0.3,
             },
-            timeout=15,
+            max_retries=2,
+            timeout=(10, 15),
         )
+        if err:
+            raise Exception(err)
         text = resp.json()["choices"][0]["message"]["content"].strip()
         related_keywords = [k.strip().strip("·—-1234567890.。、") for k in text.split("\n") if k.strip()][:3]
     except Exception:
-        pass
+        status = "ai_error"
 
     all_results = []
     for kw in related_keywords:
@@ -240,7 +280,7 @@ def rag_agent_search():
         if len(all_results) >= 20:
             break
 
-    return jsonify({"results": all_results[:20], "keywords": related_keywords})
+    return jsonify({"results": all_results[:20], "keywords": related_keywords, "status": status})
 
 
 @app.route("/api/tasks", methods=["GET"])
@@ -303,6 +343,7 @@ def chat_stream():
     context = data.get("context", {"title": "", "style": "", "lyrics": ""})
     rag_results = data.get("rag_results", [])
     target_fields = data.get("target_fields", ["title", "style", "lyrics"])
+    template_text = data.get("template_text") or None
 
     if not message:
         return jsonify({"error": "消息不能为空"}), 400
@@ -316,7 +357,7 @@ def chat_stream():
         tasks[task_id] = {"history": [], "context": {}}
     task = tasks[task_id]
 
-    system_prompt = _build_system_prompt(context, rag_results, target_fields)
+    system_prompt = _build_system_prompt(context, rag_results, target_fields, template_text)
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(task["history"])
     messages.append({"role": "user", "content": message})
@@ -325,10 +366,9 @@ def chat_stream():
 
     def generate():
         try:
-            resp = requests.post(
-                DEEPSEEK_API_URL,
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
+            resp, err = _api_post_with_retry(
+                api_key,
+                json_body={
                     "model": model,
                     "messages": messages,
                     "temperature": 1.0,
@@ -336,8 +376,11 @@ def chat_stream():
                     "stream": True,
                 },
                 stream=True,
-                timeout=(10, None),
+                timeout=(10, 120),
             )
+            if err:
+                yield f"data: {json.dumps({'type': 'error', 'error': err})}\n\n"
+                return
 
             if not resp.ok:
                 err_text = resp.text[:500]
@@ -384,11 +427,12 @@ def chat_stream():
 
 # ─── Prompt Builder ─────────────────────────────────────────────────
 
-def _build_system_prompt(context, rag_results, target_fields):
+def _build_system_prompt(context, rag_results, target_fields, template_text=None):
     title = (context.get("title") or "").strip()
     style = (context.get("style") or "").strip()
     lyrics = (context.get("lyrics") or "").strip()
 
+    # ── RAG 素材 ──
     rag_section = ""
     if rag_results:
         rag_section = "\n【参考古典诗词素材（请从中汲取意境与意象，化用而非直译）】\n"
@@ -401,6 +445,7 @@ def _build_system_prompt(context, rag_results, target_fields):
             kw_note = f"（相关词：{matched}）" if matched else ""
             rag_section += f"\n[{i}] 《{poem_title}》— {author}{kw_note}\n{lines_text}\n"
 
+    # ── 当前上下文 ──
     ctx_section = ""
     if title or style or lyrics:
         ctx_section = "\n【当前创作内容（请在此基础上修改/优化）】\n"
@@ -411,14 +456,15 @@ def _build_system_prompt(context, rag_results, target_fields):
         if lyrics:
             ctx_section += f"歌词:\n{lyrics}\n"
 
+    # ── 目标字段 ──
     field_names = {"title": "标题", "style": "风格描述", "lyrics": "歌词"}
     if len(target_fields) < 3:
         target_note = f"\n本次仅需生成/修改: {', '.join(field_names.get(f, f) for f in target_fields)}（不要改动其他字段）\n"
     else:
         target_note = ""
 
+    # ── 输出格式 ──
     is_first_creation = not title and not style and not lyrics
-
     if is_first_creation or len(target_fields) >= 2:
         format_note = """【输出格式（必须严格遵守）】
 必须使用以下分节格式，每个分节标记单独占一行：
@@ -441,13 +487,28 @@ def _build_system_prompt(context, rag_results, target_fields):
         format_note = """【输出格式】
 仅输出该字段的内容，不加任何多余说明或标记。歌词每句末尾必须有标点符号（。，！？）。"""
 
-    return f"""你是一位专业的中文歌词创作助手，擅长结合古典诗词意境创作现代流行歌词。
+    # ── 组装 ──
+    # 有模板：模板指令为主，法则为辅
+    # 无模板：法则为主
+    if template_text:
+        # Strip placeholder markers from template for cleaner system prompt
+        clean_template = template_text.replace("{{请在此粘贴古诗词内容}}", "〔用户提供的内容〕")
+        clean_template = clean_template.replace("{{请在此粘贴散文内容}}", "〔用户提供的内容〕")
+        clean_template = clean_template.replace("{{请在此粘贴小说段落（建议500字以内的关键场景）}}", "〔用户提供的内容〕")
+        instruction_section = f"""【创作指令（用户选择的模板，作为本次创作的核心指导）】
+{clean_template}
+
+【补充法则（全局遵守）】
+{SONGWRITING_RULES}"""
+    else:
+        instruction_section = f"你是一位专业的中文歌词创作助手，擅长结合古典诗词意境创作现代流行歌词。\n\n{SONGWRITING_RULES}"
+
+    return f"""{instruction_section}
 {rag_section}
-{SONGWRITING_RULES}
 {ctx_section}{target_note}
 {format_note}
 
-重要：有已有内容时在其基础上优化；字段为空时全新创作。"""
+重要：有已有内容时在其基础上优化；字段为空时全新创作。从用户输入中提炼主题，结合参考诗词的意象进行创作。"""
 
 
 def _parse_content(content, target_fields):
